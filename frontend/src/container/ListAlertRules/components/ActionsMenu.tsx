@@ -2,7 +2,14 @@ import { useCallback, useMemo } from 'react';
 import { useQueryClient } from 'react-query';
 import { Ellipsis } from '@signozhq/icons';
 import { Button } from '@signozhq/ui/button';
-import { Dropdown, type DropdownItemType } from '@signozhq/ui/dropdown';
+import AuthZDropdown from 'lib/authz/components/AuthZDropdown/AuthZDropdown';
+import type { AuthZDropdownItemType } from 'lib/authz/components/AuthZDropdown/types';
+import {
+	buildRuleDeletePermission,
+	buildRuleReadPermission,
+	buildRuleUpdatePermission,
+	RuleCreatePermission,
+} from 'lib/authz/hooks/useAuthZ/permissions/rule.permissions';
 import { toast } from '@signozhq/ui/toast';
 import { convertToApiError } from 'api/ErrorResponseHandlerForGeneratedAPIs';
 import {
@@ -27,6 +34,18 @@ interface ActionsMenuProps {
 
 function ActionsMenu({ rule, onEdit }: ActionsMenuProps): JSX.Element {
 	const queryClient = useQueryClient();
+	const { updatePermission, deletePermission, editChecks, cloneChecks } =
+		useMemo(() => {
+			const id = rule.id ?? '';
+			const read = buildRuleReadPermission(id);
+			const update = buildRuleUpdatePermission(id);
+			return {
+				updatePermission: update,
+				deletePermission: buildRuleDeletePermission(id),
+				editChecks: [read, update],
+				cloneChecks: [read, RuleCreatePermission],
+			};
+		}, [rule.id]);
 
 	const handleToggle = useCallback((): void => {
 		alertActionLogEvent(ALERT_ACTIONS.TOGGLE, rule);
@@ -111,30 +130,38 @@ function ActionsMenu({ rule, onEdit }: ActionsMenuProps): JSX.Element {
 		);
 	}, [rule, queryClient]);
 
-	const menuItems = useMemo<DropdownItemType[]>(
+	const menuItems = useMemo<AuthZDropdownItemType[]>(
 		() => [
 			{
 				type: 'item',
 				value: 'toggle',
 				label: rule.disabled ? 'Enable' : 'Disable',
+				testId: 'alert-action-toggle',
+				checks: [updatePermission],
 				onClick: handleToggle,
 			},
 			{
 				type: 'item',
 				value: 'edit',
 				label: 'Edit',
+				testId: 'alert-action-edit',
+				checks: editChecks,
 				onClick: handleEdit,
 			},
 			{
 				type: 'item',
 				value: 'edit-new-tab',
 				label: 'Edit in New Tab',
+				testId: 'alert-action-edit-new-tab',
+				checks: editChecks,
 				onClick: handleEditNewTab,
 			},
 			{
 				type: 'item',
 				value: 'clone',
 				label: 'Clone',
+				testId: 'alert-action-clone',
+				checks: cloneChecks,
 				onClick: handleClone,
 			},
 			{ type: 'separator', value: 'before-delete' },
@@ -142,12 +169,18 @@ function ActionsMenu({ rule, onEdit }: ActionsMenuProps): JSX.Element {
 				type: 'item',
 				value: 'delete',
 				label: 'Delete',
+				testId: 'alert-action-delete',
+				checks: [deletePermission],
 				danger: true,
 				onClick: handleDelete,
 			},
 		],
 		[
 			rule.disabled,
+			updatePermission,
+			deletePermission,
+			editChecks,
+			cloneChecks,
 			handleToggle,
 			handleEdit,
 			handleEditNewTab,
@@ -163,7 +196,7 @@ function ActionsMenu({ rule, onEdit }: ActionsMenuProps): JSX.Element {
 	return (
 		// eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
 		<div onClick={handleClick}>
-			<Dropdown items={menuItems} nativeButton align="end" side="bottom">
+			<AuthZDropdown items={menuItems} nativeButton align="end" side="bottom">
 				<Button
 					aria-label="Action"
 					variant="outlined"
@@ -174,7 +207,7 @@ function ActionsMenu({ rule, onEdit }: ActionsMenuProps): JSX.Element {
 				>
 					<Ellipsis size={16} />
 				</Button>
-			</Dropdown>
+			</AuthZDropdown>
 		</div>
 	);
 }
