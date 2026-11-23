@@ -1,7 +1,5 @@
 import type { ComponentProps } from 'react';
-import { Link } from '@signozhq/icons';
-
-import styles from './MarkdownExternalLink.module.scss';
+import { Typography } from '@signozhq/ui/typography';
 
 type MarkdownExternalLinkProps = ComponentProps<'a'> & {
 	// react-markdown passes `node` — accept and ignore it
@@ -11,22 +9,21 @@ type MarkdownExternalLinkProps = ComponentProps<'a'> & {
 
 export default function MarkdownExternalLink({
 	href,
+	title,
 	children,
-	node: _node,
-	...props
 }: MarkdownExternalLinkProps): JSX.Element {
 	return (
-		<a
-			href={href}
+		<Typography.Link
+			variant="paragraph"
+			size="base"
+			weight="regular"
+			textOverflow="wrap"
 			target="_blank"
-			rel="noopener noreferrer"
-			data-testid="ai-markdown-link"
-			title={href}
-			{...props}
-			className={styles.pill}
+			testId="ai-markdown-link"
+			// oxlint-disable-next-line jsx-a11y/control-has-associated-label -- Typography.Link renders the children inside it
+			render={<a href={href} title={title} />}
 		>
-			<Link size={14} className={styles.icon} />
-			<span className={styles.label}>{children}</span>
-		</a>
+			{children}
+		</Typography.Link>
 	);
 }
